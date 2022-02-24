@@ -19,7 +19,12 @@ def pars(url):
 
     texts = []
     for quote in quotes:
-        texts.append(quote.text)
+        if quote.find('a'):
+            text_href = quote.find('a').text
+            href = quote.find('a')['href']
+            texts.append(quote.text.replace(text_href, text_href+f"[{href}]"))
+        else:
+            texts.append(quote.text)
 
     return texts, heading
 
@@ -65,10 +70,9 @@ def cl_command(url):
 
 
 if __name__ == '__main__':
-    cl_command()
+    #cl_command()
     #url = 'https://lenta.ru/news/2022/02/21/smoll/'
-    #url = 'https://www.gazeta.ru/tech/2022/02/18/14549965.shtml?updated'
+    url = 'https://www.gazeta.ru/tech/2022/02/18/14549965.shtml?updated'
     #url = "https://www.forbes.ru/finansy/456757-cb-nacal-valutnye-intervencii-dla-stabilizacii-rubla?utm_source=yxnews&utm_medium=desktop"
-    #texts, heading = pars(url)
-    #print(heading)
-    #doc(texts, heading, url)
+    texts, heading = pars(url)
+    doc(texts, heading, url)
