@@ -1,42 +1,74 @@
 # Импорт библиотек для парсинга данных
-import os
-
 import requests
 from bs4 import BeautifulSoup
 # Импорт библиотек для работы с Word
+import os
 from docx import Document
 from docx.shared import Pt
+from docx.shared import Mm
+# Импорт библиотек для работы с консолью
+import click
 
 
 # Функция для парсинга
 def pars(url):
     response = requests.get(url)
     soup = BeautifulSoup(response.text, 'lxml')
-    quotes = soup.find_all('main')
+    quotes = soup.find_all('p')
+    heading = soup.find_all('h1')
 
-    text = ""
+    texts = []
     for quote in quotes:
-        text += quote.text
+        texts.append(quote.text)
 
-    return text
+    return texts, heading
 
 
-def doc(text, url):
+def doc(texts, heading, url):
     document = Document()
     style = document.styles['Normal']
     style.font.name = 'Times New Roman'
-    style.font.size = Pt(14)
-    document.add_paragraph(text)
-    head = document.add_heading('Основы работы с файлами Microsoft Word на Python.')
+    style.font.size = Pt(16)
+    #document.add_heading(heading[0].text)
+    run = document.add_paragraph().add_run(heading[0].text)
+    run.font.size = Pt(24)
+    run.bold = True
+    document.add_paragraph(" ")
+    for text in texts:
+        paragraph = document.add_paragraph(text)
+        fmt = paragraph.paragraph_format
+        fmt.space_before = Mm(0)
+        fmt.space_after = Mm(0)
+        paragraph = document.add_paragraph(" ")
+        fmt = paragraph.paragraph_format
+        fmt.space_before = Mm(0)
+        fmt.space_after = Mm(0)
+
+    if "?" in url:
+        url = url.replace("?", "/")
 
     path = url.split("://")[1].split("/")
     path = '\\'.join([str(x) for x in path])
     if not os.path.exists(path):
         os.makedirs(path)
-    document.save(os.getcwd()+"\\"+path+'restyled.docx')
+    all_path = os.getcwd()+"\\"+path+'\\restyled.docx'
+    document.save(all_path)
+    return all_path
+
+
+@click.command()
+@click.option('--url', prompt='Укажите ссылку на сайт', help='Ссылка на тот сайт, информацию откуда вы хотите взять')
+def cl_command(url):
+    texts, heading = pars(url)
+    all_path = doc(texts, heading, url)
+    click.echo(f"файл создан по пути: {all_path}")
 
 
 if __name__ == '__main__':
-    url = 'https://lenta.ru/news/2022/02/21/smoll/'
-    text = pars(url)
-    doc(text, url)
+    cl_command()
+    #url = 'https://lenta.ru/news/2022/02/21/smoll/'
+    #url = 'https://www.gazeta.ru/tech/2022/02/18/14549965.shtml?updated'
+    #url = "https://www.forbes.ru/finansy/456757-cb-nacal-valutnye-intervencii-dla-stabilizacii-rubla?utm_source=yxnews&utm_medium=desktop"
+    #texts, heading = pars(url)
+    #print(heading)
+    #doc(texts, heading, url)
