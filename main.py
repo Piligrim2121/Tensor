@@ -8,23 +8,31 @@ from docx.shared import Pt
 from docx.shared import Mm
 # Импорт библиотек для работы с консолью
 import click
+# Импорт библиотке для работы с json(файлом настройки)
+import json
 
 
 # Функция для парсинга
 def pars(url):
     response = requests.get(url)
     soup = BeautifulSoup(response.text, 'lxml')
-    quotes = soup.find_all('p')
+
+    intents = json.loads(open('setting.json', encoding="utf-8").read())
+    quotes = soup.find_all(intents.get('pars_teg'))
     heading = soup.find_all('h1')
+
+    #ignore_class = soup.find_all("p", {"class": "eqjou"})
 
     texts = []
     for quote in quotes:
+        #print(quote)
         if quote.find('a'):
             text_href = quote.find('a').text
             href = quote.find('a')['href']
             texts.append(quote.text.replace(text_href, text_href+f"[{href}]"))
         else:
             texts.append(quote.text)
+        
 
     return texts, heading
 
