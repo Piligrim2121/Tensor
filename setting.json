@@ -1,4 +1,1 @@
-{
-  "ignore_class": ["footer", "2r"],
-  "pars_teg": ["p"]
-}
+{"ignore_class": ["footer", "text-white"], "pars_teg": ["p"]}

@@ -17,11 +17,10 @@ def pars(url):
     response = requests.get(url)
     soup = BeautifulSoup(response.text, 'lxml')
 
-    intents = json.loads(open('setting.json', encoding="utf-8").read())
-    quotes = soup.find_all(intents.get('pars_teg'))
-    heading = soup.find_all('h1')
-
-    #ignore_class = soup.find_all("p", {"class": "eqjou"})
+    setting = json.loads(open('setting.json', encoding="utf-8").read())
+    # Нахождение текстовой информации
+    quotes = soup.find_all(setting.get('pars_teg'), {"class": not setting.get('ignore_class')})
+    heading = soup.find_all('h1')  # Нахождение заголовка
 
     texts = []
     for quote in quotes:
@@ -32,17 +31,16 @@ def pars(url):
             texts.append(quote.text.replace(text_href, text_href+f"[{href}]"))
         else:
             texts.append(quote.text)
-        
 
     return texts, heading
 
 
+# Формирование word документа
 def doc(texts, heading, url):
     document = Document()
     style = document.styles['Normal']
     style.font.name = 'Times New Roman'
     style.font.size = Pt(16)
-    #document.add_heading(heading[0].text)
     run = document.add_paragraph().add_run(heading[0].text)
     run.font.size = Pt(24)
     run.bold = True
@@ -69,6 +67,7 @@ def doc(texts, heading, url):
     return all_path
 
 
+# Фунция для работы в консоле
 @click.command()
 @click.option('--url', prompt='Укажите ссылку на сайт', help='Ссылка на тот сайт, информацию откуда вы хотите взять')
 def cl_command(url):
@@ -77,10 +76,28 @@ def cl_command(url):
     click.echo(f"файл создан по пути: {all_path}")
 
 
+# Добавить новую инструкцию в файл настроек
+def add_setting(name, val):
+    setting = json.loads(open('setting.json', encoding="utf-8").read())  # dict
+    setting[name].append(val)
+    with open('setting.json', "w") as file:
+        json.dump(setting, file)
+
+
+# Удалить инструкцию из файла настроек
+def delete_setting(name, val):
+    setting = json.loads(open('setting.json', encoding="utf-8").read())  # dict
+    setting[name].remove(val)
+    with open('setting.json', "w") as file:
+        json.dump(setting, file)
+
+
 if __name__ == '__main__':
     #cl_command()
     #url = 'https://lenta.ru/news/2022/02/21/smoll/'
-    url = 'https://www.gazeta.ru/tech/2022/02/18/14549965.shtml?updated'
+    #url = 'https://www.gazeta.ru/tech/2022/02/18/14549965.shtml?updated'
     #url = "https://www.forbes.ru/finansy/456757-cb-nacal-valutnye-intervencii-dla-stabilizacii-rubla?utm_source=yxnews&utm_medium=desktop"
-    texts, heading = pars(url)
-    doc(texts, heading, url)
+    #url = 'http://holyday/'
+    #texts, heading = pars(url)
+    #doc(texts, heading, url)
+    delete_setting('pars_teg', 'test')
