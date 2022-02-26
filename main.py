@@ -67,37 +67,79 @@ def doc(texts, heading, url):
     return all_path
 
 
-# Фунция для работы в консоле
+# Основная функция
+@click.command()
+@click.option('--command', prompt='Выберите цифру нужной команды', help='Возможные команды: 1 - отформатировать '
+                                                                        'страницу сайта для комфортного чтения\n2 - '
+                                                                        'Вывести настройки\n3 - Добавить новую '
+                                                                        'инструкцию в настройки\n4 - Удалить '
+                                                                        'инструкцию из настроек')
+def cl_command(command):
+    if command == '1':
+        primary()
+    elif command == '2':
+        read_setting()
+    elif command == '3':
+        add_setting()
+    elif command == '4':
+        delete_setting()
+    else:
+        click.echo("Такой команды не существует, воспользуйтесь --help")
+
+
+# Основная функция
 @click.command()
 @click.option('--url', prompt='Укажите ссылку на сайт', help='Ссылка на тот сайт, информацию откуда вы хотите взять')
-def cl_command(url):
+def primary(url):
     texts, heading = pars(url)
     all_path = doc(texts, heading, url)
     click.echo(f"файл создан по пути: {all_path}")
+    cl_command()
 
 
+@click.command()
+def read_setting():
+    setting = json.loads(open('setting.json', encoding="utf-8").read())
+    click.echo(setting)
+
+
+@click.command()
+@click.option('--name', prompt='Укажите имя ключа', help='Имя ключа(ignore_class, pars_teg)')
+@click.option('--val', prompt='Укажите значение ключа', help='Значение ключа')
 # Добавить новую инструкцию в файл настроек
 def add_setting(name, val):
-    setting = json.loads(open('setting.json', encoding="utf-8").read())  # dict
-    setting[name].append(val)
-    with open('setting.json', "w") as file:
-        json.dump(setting, file)
+    setting = json.loads(open('setting.json', encoding="utf-8").read())
+    if name in setting.keys():
+        setting[name].append(val)
+        with open('setting.json', "w") as file:
+            json.dump(setting, file)
+        click.echo("Найстройки изменены")
+    else:
+        click.echo("Такого ключа нет, попробуте pars_teg или ignore_class")
+    cl_command()
 
 
+@click.command()
+@click.option('--name', prompt='Укажите имя ключа', help='Имя ключа(ignore_class, pars_teg)')
+@click.option('--val', prompt='Укажите значение ключа', help='Значение ключа')
 # Удалить инструкцию из файла настроек
 def delete_setting(name, val):
-    setting = json.loads(open('setting.json', encoding="utf-8").read())  # dict
-    setting[name].remove(val)
-    with open('setting.json', "w") as file:
-        json.dump(setting, file)
+    setting = json.loads(open('setting.json', encoding="utf-8").read())
+    if name in setting.keys():
+        setting[name].remove(val)
+        with open('setting.json', "w") as file:
+            json.dump(setting, file)
+        click.echo("Найстройки изменены")
+    else:
+        click.echo("Такого ключа нет, попробуте pars_teg или ignore_class")
+    cl_command()
 
 
 if __name__ == '__main__':
-    #cl_command()
+    cl_command()
     #url = 'https://lenta.ru/news/2022/02/21/smoll/'
     #url = 'https://www.gazeta.ru/tech/2022/02/18/14549965.shtml?updated'
     #url = "https://www.forbes.ru/finansy/456757-cb-nacal-valutnye-intervencii-dla-stabilizacii-rubla?utm_source=yxnews&utm_medium=desktop"
     #url = 'http://holyday/'
     #texts, heading = pars(url)
     #doc(texts, heading, url)
-    delete_setting('pars_teg', 'test')
