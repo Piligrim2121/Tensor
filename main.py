@@ -1,3 +1,4 @@
+import sys
 # Импорт библиотек для парсинга данных
 import requests
 from bs4 import BeautifulSoup
@@ -12,59 +13,72 @@ import click
 import json
 
 
-# Функция для парсинга
-def pars(url):
-    response = requests.get(url)
-    soup = BeautifulSoup(response.text, 'lxml')
-
-    setting = json.loads(open('setting.json', encoding="utf-8").read())
-    # Нахождение текстовой информации
-    quotes = soup.find_all(setting.get('pars_teg'), {"class": not setting.get('ignore_class')})
-    heading = soup.find_all('h1')  # Нахождение заголовка
-
+class Handler:
+    heading = ""
     texts = []
-    for quote in quotes:
-        #print(quote)
-        if quote.find('a'):
-            text_href = quote.find('a').text
-            href = quote.find('a')['href']
-            texts.append(quote.text.replace(text_href, text_href+f"[{href}]"))
+    url = ""
+
+    def __init__(self, url):
+        self.url = url
+
+    # Функция для парсинга
+    def pars(self):
+        self.heading = ""
+        self.texts = []
+
+        response = requests.get(self.url)
+        soup = BeautifulSoup(response.text, 'lxml')
+
+        # Нахождение текстовой информации
+        setting = json.loads(open('setting.json', encoding="utf-8").read())
+        if not setting.get('pars_teg'):
+            click.echo("Некоректные настройки, укажите хотя бы 1 значение у ключа pars_teg")
+            sys.exit()
+        if not setting.get('ignore_class'):
+            quotes = soup.find_all(setting.get('pars_teg'))
         else:
-            texts.append(quote.text)
+            quotes = soup.find_all(setting.get('pars_teg'), {"class": not setting.get('ignore_class')})
+        self.heading = soup.find_all('h1')[0].text  # Нахождение заголовка
 
-    return texts, heading
+        for quote in quotes:
+            # print(quote)
+            if quote.find('a'):
+                text_href = quote.find('a').text
+                href = quote.find('a')['href']
+                self.texts.append(quote.text.replace(text_href, text_href + f"[{href}]"))
+            else:
+                self.texts.append(quote.text)
 
+    # Формирование word документа
+    def doc(self):
+        document = Document()
+        style = document.styles['Normal']
+        style.font.name = 'Times New Roman'
+        style.font.size = Pt(16)
+        run = document.add_paragraph().add_run(self.heading)
+        run.font.size = Pt(24)
+        run.bold = True
+        document.add_paragraph(" ")
+        for text in self.texts:
+            paragraph = document.add_paragraph(text)
+            fmt = paragraph.paragraph_format
+            fmt.space_before = Mm(0)
+            fmt.space_after = Mm(0)
+            paragraph = document.add_paragraph(" ")
+            fmt = paragraph.paragraph_format
+            fmt.space_before = Mm(0)
+            fmt.space_after = Mm(0)
 
-# Формирование word документа
-def doc(texts, heading, url):
-    document = Document()
-    style = document.styles['Normal']
-    style.font.name = 'Times New Roman'
-    style.font.size = Pt(16)
-    run = document.add_paragraph().add_run(heading[0].text)
-    run.font.size = Pt(24)
-    run.bold = True
-    document.add_paragraph(" ")
-    for text in texts:
-        paragraph = document.add_paragraph(text)
-        fmt = paragraph.paragraph_format
-        fmt.space_before = Mm(0)
-        fmt.space_after = Mm(0)
-        paragraph = document.add_paragraph(" ")
-        fmt = paragraph.paragraph_format
-        fmt.space_before = Mm(0)
-        fmt.space_after = Mm(0)
+        if "?" in self.url:
+            self.url = self.url.replace("?", "/")
 
-    if "?" in url:
-        url = url.replace("?", "/")
-
-    path = url.split("://")[1].split("/")
-    path = '\\'.join([str(x) for x in path])
-    if not os.path.exists(path):
-        os.makedirs(path)
-    all_path = os.getcwd()+"\\"+path+'\\restyled.docx'
-    document.save(all_path)
-    return all_path
+        path = self.url.split("://")[1].split("/")
+        path = '\\'.join([str(x) for x in path])
+        if not os.path.exists(path):
+            os.makedirs(path)
+        all_path = os.getcwd() + "\\" + path + '\\restyled.docx'
+        document.save(all_path)
+        return all_path
 
 
 # Основная функция
@@ -91,10 +105,10 @@ def cl_command(command):
 @click.command()
 @click.option('--url', prompt='Укажите ссылку на сайт', help='Ссылка на тот сайт, информацию откуда вы хотите взять')
 def primary(url):
-    texts, heading = pars(url)
-    all_path = doc(texts, heading, url)
+    handle = Handler(url)
+    handle.pars()
+    all_path = handle.doc()
     click.echo(f"файл создан по пути: {all_path}")
-    cl_command()
 
 
 @click.command()
@@ -116,7 +130,6 @@ def add_setting(name, val):
         click.echo("Найстройки изменены")
     else:
         click.echo("Такого ключа нет, попробуте pars_teg или ignore_class")
-    cl_command()
 
 
 @click.command()
@@ -132,14 +145,7 @@ def delete_setting(name, val):
         click.echo("Найстройки изменены")
     else:
         click.echo("Такого ключа нет, попробуте pars_teg или ignore_class")
-    cl_command()
 
 
 if __name__ == '__main__':
     cl_command()
-    #url = 'https://lenta.ru/news/2022/02/21/smoll/'
-    #url = 'https://www.gazeta.ru/tech/2022/02/18/14549965.shtml?updated'
-    #url = "https://www.forbes.ru/finansy/456757-cb-nacal-valutnye-intervencii-dla-stabilizacii-rubla?utm_source=yxnews&utm_medium=desktop"
-    #url = 'http://holyday/'
-    #texts, heading = pars(url)
-    #doc(texts, heading, url)
