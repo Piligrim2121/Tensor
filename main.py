@@ -41,7 +41,6 @@ class Handler:
         self.heading = soup.find_all('h1')[0].text  # Нахождение заголовка
 
         for quote in quotes:
-            # print(quote)
             if quote.find('a'):
                 text_href = quote.find('a').text
                 href = quote.find('a')['href']
@@ -101,7 +100,7 @@ def cl_command(command):
         click.echo("Такой команды не существует, воспользуйтесь --help")
 
 
-# Основная функция
+# Функция обработки сайтов
 @click.command()
 @click.option('--url', prompt='Укажите ссылку на сайт', help='Ссылка на тот сайт, информацию откуда вы хотите взять')
 def primary(url):
@@ -111,16 +110,17 @@ def primary(url):
     click.echo(f"файл создан по пути: {all_path}")
 
 
+# Функция чтения настроек
 @click.command()
 def read_setting():
     setting = json.loads(open('setting.json', encoding="utf-8").read())
     click.echo(setting)
 
 
+# Добавить новую инструкцию в файл настроек
 @click.command()
 @click.option('--name', prompt='Укажите имя ключа', help='Имя ключа(ignore_class, pars_teg)')
 @click.option('--val', prompt='Укажите значение ключа', help='Значение ключа')
-# Добавить новую инструкцию в файл настроек
 def add_setting(name, val):
     setting = json.loads(open('setting.json', encoding="utf-8").read())
     if name in setting.keys():
@@ -132,10 +132,10 @@ def add_setting(name, val):
         click.echo("Такого ключа нет, попробуте pars_teg или ignore_class")
 
 
+# Удалить инструкцию из файла настроек
 @click.command()
 @click.option('--name', prompt='Укажите имя ключа', help='Имя ключа(ignore_class, pars_teg)')
 @click.option('--val', prompt='Укажите значение ключа', help='Значение ключа')
-# Удалить инструкцию из файла настроек
 def delete_setting(name, val):
     setting = json.loads(open('setting.json', encoding="utf-8").read())
     if name in setting.keys():
